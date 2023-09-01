@@ -1,1825 +1,841 @@
 // Normal Mario Geo
 
-// 0x170002E0
-const GeoLayout mario_geo_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_on_eyes_dead),
-            GEO_CLOSE_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_cap_off_eyes_dead),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_cap_wings), // left
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_cap_wings), // right
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+#define hmsShadow(a,b,c) GEO_SHADOW(c,b,a),
+#define hmsCProg(a,b) GEO_ASM(a,b),
+#define hmsSelect(a,b) GEO_SWITCH_CASE(a,b),
+#define CtrlMarioEye geo_switch_mario_eyes
+#define CtrlMarioHead geo_mario_head_rotation
+#define CtrlMarioWaist geo_move_mario_part_from_parent
+#define CtrlMarioRenderMode geo_switch_mario_cap_effect
+#define CtrlMarioAlpha geo_mirror_mario_set_alpha
+#define CtrlMarioLOD geo_switch_mario_stand_run
+#define RCP_MarioHierarchy mario_geo
+#define hmsSucker(a,b,c,d,e) GEO_HELD_OBJECT(a,b,c,d,e),
+#define CtrlMarioHand geo_switch_mario_hand
+#define CtrlMarioTaking geo_switch_mario_hand_grab_pos
+#define hmsRotate(a,b,c) GEO_ROTATION_NODE(a,b,c, 0),
+#define hmsCall(a) GEO_BRANCH(1, a),
+#define hmsReturn() GEO_RETURN(),
+#define hmsLOD(a,b) GEO_RENDER_RANGE(a,b),
+#define hmsGroup() CMD_BBH(11, 0, 0),
+#define hmsBegin() GEO_OPEN_NODE(),
+#define hmsTrans(x,y,z) GEO_TRANSLATE(0x00, x,y,z),
+#define hmsScale(s) GEO_SCALE(0x00, (u32)(s * 65536)),
+#define hmsJoint(l,dl,x,y,z) GEO_ANIMATED_PART(l, x, y, z, dl),
+#define hmsEnd() GEO_CLOSE_NODE(),
+#define hmsExit() GEO_END(),
+#define hmsBboard(x,y,z) GEO_BILLBOARD(),
+#define hmsGfx(l,dl) GEO_DISPLAY_LIST(l, dl),
+
+#define RM_SURF LAYER_OPAQUE
+#define RM_XSURF LAYER_TRANSPARENT
+#define RM_SPRITE LAYER_ALPHA
+
+#define	softspriteON	1
+
+#define Hierarchy const GeoLayout
+
+//extern ulong CtrlMarioAlpha(int code, MapNode *node, void *data);
+//extern ulong CtrlMarioRenderMode(int code, MapNode *node);
+
+extern Gfx RCP_mario_head1[];
+extern Gfx RCP_mario_head2[];
+extern Gfx RCP_mario_head3[];
+extern Gfx RCP_mario_head4[];
+extern Gfx RCP_mario_head5[];
+extern Gfx RCP_mario_head6[];
+extern Gfx RCP_mario_head7[];
+extern Gfx RCP_mario_head8[];
+
+extern Gfx RCP_mario_far_head1[];
+extern Gfx RCP_mario_far_head2[];
+extern Gfx RCP_mario_far_head3[];
+extern Gfx RCP_mario_far_head4[];
+extern Gfx RCP_mario_far_head5[];
+extern Gfx RCP_mario_far_head6[];
+extern Gfx RCP_mario_far_head7[];
+extern Gfx RCP_mario_far_head8[];
+
+extern Gfx RCP_swim_hand_l[];
+extern Gfx RCP_swim_hand_r[];
+extern Gfx RCP_mario_vsign_hand[];
+
+extern Gfx RCP_mario_near_body[];
+extern Gfx RCP_mario_mid_body[];
+extern Gfx RCP_mario_far_body[];
+
+extern Gfx RCP_mario_near0[];
+extern Gfx RCP_mario_near1[];
+extern Gfx RCP_mario_near2[];
+extern Gfx RCP_mario_near3[];
+extern Gfx RCP_mario_near4[];
+extern Gfx RCP_mario_near5[];
+extern Gfx RCP_mario_near6[];
+extern Gfx RCP_mario_near7[];
+extern Gfx RCP_mario_near8[];
+extern Gfx RCP_mario_near9[];
+extern Gfx RCP_mario_near10[];
+extern Gfx RCP_mario_near11[];
+extern Gfx RCP_mario_near14[];
+
+extern Gfx RCP_mario_mid0[];
+extern Gfx RCP_mario_mid1[];
+extern Gfx RCP_mario_mid2[];
+extern Gfx RCP_mario_mid3[];
+extern Gfx RCP_mario_mid4[];
+extern Gfx RCP_mario_mid5[];
+extern Gfx RCP_mario_mid6[];
+extern Gfx RCP_mario_mid7[];
+extern Gfx RCP_mario_mid8[];
+extern Gfx RCP_mario_mid9[];
+extern Gfx RCP_mario_mid10[];
+extern Gfx RCP_mario_mid11[];
+extern Gfx RCP_mario_mid14[];
+
+extern Gfx RCP_mario_far0[];
+extern Gfx RCP_mario_far1[];
+extern Gfx RCP_mario_far2[];
+extern Gfx RCP_mario_far3[];
+extern Gfx RCP_mario_far4[];
+extern Gfx RCP_mario_far5[];
+extern Gfx RCP_mario_far6[];
+extern Gfx RCP_mario_far7[];
+extern Gfx RCP_mario_far8[];
+extern Gfx RCP_mario_far9[];
+extern Gfx RCP_mario_far10[];
+extern Gfx RCP_mario_far11[];
+extern Gfx RCP_mario_far14[];
+
+
+
+/********************************************************************************/
+/*	Title mario hierarchy map data.												*/
+/********************************************************************************/
+static Hierarchy RCP_TitleMarioHierarchy[] = {
+	hmsJoint(RM_SURF, NULL, 0, 0, 0)											/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_SURF, RCP_mario_near14, 0, 0, 0)							/* m_waist1_3	*/
+		hmsBegin()
+//			hmsCProg(0, MarioProc1)
+			hmsJoint(RM_SURF, RCP_mario_near_body, 68, 0, 0)					/* m_body1		*/
+			hmsBegin()
+
+				hmsJoint(RM_SURF, NULL, 87, 0, 0)							/* m_head2		*/
+				hmsBegin()
+					hmsSelect(0, CtrlMarioEye)							/* for the eye animation	*/
+					hmsBegin()
+						hmsGfx(RM_SURF, RCP_mario_head1)
+						hmsGfx(RM_SURF, RCP_mario_head2)
+						hmsGfx(RM_SURF, RCP_mario_head3)
+						hmsGfx(RM_SURF, RCP_mario_head4)
+						hmsGfx(RM_SURF, RCP_mario_head5)
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_SURF, NULL, 67, -10, 79)							/* chn6			*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near2, 0, 0, 0)				/* m_larmA1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near1, 65, 0, 0)			/* m_larmB1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_near0, 60, 0, 0)		/* m_lhamd1		*/
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_SURF, NULL, 68, -10, -79)						/* chn10		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near5, 0, 0, 0)				/* m_rarmA1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near4, 65, 0, 0)			/* m_rarmB1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_near3, 60, 0, 0)		/* m_rhand1		*/
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_near11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near10, 89, 0, 0)			/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_near8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x1700041C
-const GeoLayout mario_geo_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+/********************************************************************************/
+/*	Near mario hierarchy map data [ Opaque ].									*/
+/********************************************************************************/
+const GeoLayout RCP_NearMarioHierarchy[] = {
+	hmsJoint(RM_SURF, NULL, 0, 0, 0)											/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_SURF, RCP_mario_near14, 0, 0, 0)							/* m_waist1_3	*/
+		hmsBegin()
+
+			hmsCProg(0, CtrlMarioWaist)
+			hmsRotate(0, 0, 0)
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_near_body, 68, 0, 0)					/* m_body1		*/
+				hmsBegin()
+
+					hmsJoint(RM_SURF, NULL, 87, 0, 0)							/* m_head2		*/
+					hmsBegin()
+						hmsCProg(0, CtrlMarioHead)
+						hmsRotate(0, 0, 0)								/* for control by program	*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioEye)					/* for the eye animation	*/
+							hmsBegin()
+								hmsGfx(RM_SURF, RCP_mario_head1)
+								hmsGfx(RM_SURF, RCP_mario_head2)
+								hmsGfx(RM_SURF, RCP_mario_head3)
+								hmsGfx(RM_SURF, RCP_mario_head4)
+								hmsGfx(RM_SURF, RCP_mario_head5)
+								hmsGfx(RM_SURF, RCP_mario_head6)
+								hmsGfx(RM_SURF, RCP_mario_head7)
+								hmsGfx(RM_SURF, RCP_mario_head8)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_SURF, NULL, 67, -10, 79)							/* chn6			*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near2, 0, 0, 0)				/* m_larmA1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_near1, 65, 0, 0)			/* m_larmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_SURF, RCP_mario_near0, 60, 0, 0)		/* m_lhamd1		*/
+									hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+									hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_SURF, NULL, 68, -10, -79)						/* chn10		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near5, 0, 0, 0)				/* m_rarmA1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_near4, 65, 0, 0)			/* m_rarmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_SURF, RCP_mario_near3, 60, 0, 0)		/* m_rhand1		*/
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_SURF, RCP_swim_hand_r, 60, 0, 0)
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_SURF, RCP_mario_vsign_hand, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_near11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near10, 89, 0, 0)			/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_near8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_near7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_near6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x17000494
-const GeoLayout mario_geo_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+/********************************************************************************/
+/*	Near mario hierarchy map data [ Translucent & Transparent ].				*/
+/********************************************************************************/
+const GeoLayout RCP_NearMarioHierarchy_XLU[] = {
+	hmsJoint(RM_XSURF, NULL, 0, 0, 0)											/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_XSURF, RCP_mario_near14, 0, 0, 0)							/* m_waist1_3	*/
+		hmsBegin()
+			hmsCProg(0, CtrlMarioWaist)
+			hmsRotate(0, 0, 0)
+			hmsBegin()
+
+				hmsJoint(RM_XSURF, RCP_mario_near_body, 68, 0, 0)					/* m_body1		*/
+				hmsBegin()
+
+					hmsJoint(RM_XSURF, NULL, 87, 0, 0)							/* m_head2		*/
+					hmsBegin()
+						hmsCProg(0, CtrlMarioHead)
+						hmsRotate(0, 0, 0)								/* for control by program	*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioEye)					/* for the eye animation	*/
+							hmsBegin()
+								hmsGfx(RM_XSURF, RCP_mario_head1)
+								hmsGfx(RM_XSURF, RCP_mario_head2)
+								hmsGfx(RM_XSURF, RCP_mario_head3)
+								hmsGfx(RM_XSURF, RCP_mario_head4)
+								hmsGfx(RM_XSURF, RCP_mario_head5)
+								hmsGfx(RM_XSURF, RCP_mario_head6)
+								hmsGfx(RM_XSURF, RCP_mario_head7)
+								hmsGfx(RM_XSURF, RCP_mario_head8)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_XSURF, NULL, 67, -10, 79)							/* chn6			*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_near2, 0, 0, 0)				/* m_larmA1		*/
+						hmsBegin()
+							hmsJoint(RM_XSURF, RCP_mario_near1, 65, 0, 0)			/* m_larmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_XSURF, RCP_mario_near0, 60, 0, 0)		/* m_lhamd1		*/
+									hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+									hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_XSURF, NULL, 68, -10, -79)						/* chn10		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_near5, 0, 0, 0)				/* m_rarmA1		*/
+						hmsBegin()
+							hmsJoint(RM_XSURF, RCP_mario_near4, 65, 0, 0)			/* m_rarmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_XSURF, RCP_mario_near3, 60, 0, 0)		/* m_rhand1		*/
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_XSURF, RCP_swim_hand_r, 60, 0, 0)
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_XSURF, RCP_mario_vsign_hand, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_near11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_near10, 89, 0, 0)			/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_near9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_near8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_near7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_near6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// The body loads all the parts with some shared dls to apply the solid color of the dl that has it, the same rule applies to the medium and low poly geos
+/********************************************************************************/
+/*	Middle mario hierarchy map data [ Opaque ].									*/
+/********************************************************************************/
+const GeoLayout RCP_MidMarioHierarchy[] = {
+	hmsJoint(RM_SURF, NULL, 0, 0, 0)										/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_SURF, RCP_mario_mid14, 0, 0, 0)						/* m_waist1_3	*/
+		hmsBegin()
+			hmsCProg(0, CtrlMarioWaist)
+			hmsRotate(0, 0, 0)
+			hmsBegin()
 
-// 0x1700053C
-const GeoLayout mario_geo_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_butt), // starts sharing solid color with mario_torso (blue)
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_geo_face_and_wings), // stops sharing because faces has its own dl
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_left_arm), // starts sharing solid color with mario_left_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_left_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_right_arm), // starts sharing solid color of his dl with mario_right_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_right_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_left_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_left_foot), // stops sharing because foot has its solid color (brown)
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_right_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_right_foot), // stops sharing because foot has its solid color (brown)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+//				hmsCProg(0, MarioProc1)
+				hmsJoint(RM_SURF, RCP_mario_mid_body, 68, 0, 0)					/* m_body1		*/
+				hmsBegin()
+
+					hmsJoint(RM_SURF, NULL, 87, 0, 0)						/* m_head2		*/
+					hmsBegin()
+						hmsCProg(0, CtrlMarioHead)
+						hmsRotate(0, 0, 0)							/* for control by program	*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioEye)				/* for the eye animation	*/
+							hmsBegin()
+								hmsGfx(RM_SURF, RCP_mario_head1)
+								hmsGfx(RM_SURF, RCP_mario_head2)
+								hmsGfx(RM_SURF, RCP_mario_head3)
+								hmsGfx(RM_SURF, RCP_mario_head4)
+								hmsGfx(RM_SURF, RCP_mario_head5)
+								hmsGfx(RM_SURF, RCP_mario_head6)
+								hmsGfx(RM_SURF, RCP_mario_head7)
+								hmsGfx(RM_SURF, RCP_mario_head8)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_SURF, NULL, 67, -10, 79)							/* chn6			*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_mid2, 0, 0, 0)				/* m_larmA1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_mid1, 65, 0, 0)			/* m_larmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_SURF, RCP_mario_mid0 , 60, 0, 0)		/* m_lhamd1		*/
+									hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+									hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+
+					hmsJoint(RM_SURF, NULL, 68, -10, -79)						/* chn10		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_mid5, 0, 0, 0)				/* m_rarmA1		*/
+						hmsBegin()
+							hmsJoint(RM_SURF, RCP_mario_mid4, 65, 0, 0)			/* m_rarmB1		*/
+							hmsBegin()
+								hmsSelect(0, CtrlMarioHand)
+								hmsBegin()
+									hmsJoint(RM_SURF, RCP_mario_mid3 , 60, 0, 0)		/* m_rhand1		*/
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_SURF, RCP_swim_hand_r, 60, 0, 0)
+									hmsBegin()
+										hmsSucker(0,0,0, 0,CtrlMarioTaking)
+									hmsEnd()
+									hmsJoint(RM_SURF, RCP_mario_vsign_hand, 60, 0, 0)
+								hmsEnd()
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_mid11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_mid10, 89, 0, 0)				/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_mid9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_mid8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_mid7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_mid6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x170006F8
-const GeoLayout mario_geo_medium_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_medium_poly_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+/********************************************************************************/
+/*	Middle mario hierarchy map data [ Translucent & Transparent ].				*/
+/********************************************************************************/
+const GeoLayout RCP_MidMarioHierarchy_XLU[] = {
+	hmsJoint(RM_XSURF, NULL, 0, 0, 0)										/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_XSURF, RCP_mario_mid14, 0, 0, 0)						/* m_waist1_3	*/
+		hmsBegin()
+//			hmsCProg(0, MarioProc1)
+			hmsJoint(RM_XSURF, RCP_mario_mid_body, 68, 0, 0)					/* m_body1		*/
+			hmsBegin()
+
+				hmsJoint(RM_XSURF, NULL, 87, 0, 0)						/* m_head2		*/
+				hmsBegin()
+					hmsCProg(0, CtrlMarioHead)
+					hmsRotate(0, 0, 0)							/* for control by program	*/
+					hmsBegin()
+						hmsSelect(0, CtrlMarioEye)				/* for the eye animation	*/
+						hmsBegin()
+							hmsGfx(RM_XSURF, RCP_mario_head1)
+							hmsGfx(RM_XSURF, RCP_mario_head2)
+							hmsGfx(RM_XSURF, RCP_mario_head3)
+							hmsGfx(RM_XSURF, RCP_mario_head4)
+							hmsGfx(RM_XSURF, RCP_mario_head5)
+							hmsGfx(RM_XSURF, RCP_mario_head6)
+							hmsGfx(RM_XSURF, RCP_mario_head7)
+							hmsGfx(RM_XSURF, RCP_mario_head8)
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_XSURF, NULL, 67, -10, 79)							/* chn6			*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_mid2, 0, 0, 0)				/* m_larmA1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_mid1, 65, 0, 0)			/* m_larmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_XSURF, RCP_mario_mid0 , 60, 0, 0)		/* m_lhamd1		*/
+								hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_XSURF, NULL, 68, -10, -79)						/* chn10		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_mid5, 0, 0, 0)				/* m_rarmA1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_mid4, 65, 0, 0)			/* m_rarmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_XSURF, RCP_mario_mid3 , 60, 0, 0)		/* m_rhand1		*/
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_XSURF, RCP_swim_hand_r, 60, 0, 0)
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_XSURF, RCP_mario_vsign_hand, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_mid11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_mid10, 89, 0, 0)				/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_mid9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_mid8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_mid7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_mid6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x17000770
-const GeoLayout mario_geo_medium_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_medium_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+/********************************************************************************/
+/*	Far mario hierarchy map data [ Opaque ].									*/
+/********************************************************************************/
+const GeoLayout RCP_FarMarioHierarchy[] = {
+	hmsJoint(RM_SURF, NULL, 0, 0, 0)										/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_SURF, RCP_mario_far14, 0, 0, 0)						/* m_waist1_3	*/
+		hmsBegin()
+//  			hmsCProg(0, MarioProc1)
+			hmsJoint(RM_SURF, RCP_mario_far_body, 68, 0, 0)					/* m_body1		*/
+			hmsBegin()
+
+				hmsJoint(RM_SURF, NULL, 87, 0, 0)						/* m_head2		*/
+				hmsBegin()
+					hmsCProg(0, CtrlMarioHead)
+					hmsRotate(0, 0, 0)							/* for control by program	*/
+					hmsBegin()
+						hmsSelect(0, CtrlMarioEye)				/* for the eye animation	*/
+						hmsBegin()
+							hmsGfx(RM_SURF, RCP_mario_far_head1)
+							hmsGfx(RM_SURF, RCP_mario_far_head2)
+							hmsGfx(RM_SURF, RCP_mario_far_head3)
+							hmsGfx(RM_SURF, RCP_mario_far_head4)
+							hmsGfx(RM_SURF, RCP_mario_far_head5)
+							hmsGfx(RM_SURF, RCP_mario_far_head6)
+							hmsGfx(RM_SURF, RCP_mario_far_head7)
+							hmsGfx(RM_SURF, RCP_mario_far_head8)
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_SURF, NULL, 67, -10, 79)							/* chn6			*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_far2, 0, 0, 0)				/* m_larmA1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_far1, 65, 0, 0)			/* m_larmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_SURF, RCP_mario_far0 , 60, 0, 0)		/* m_lhamd1		*/
+								hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsJoint(RM_SURF, RCP_swim_hand_l, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_SURF, NULL, 68, -10, -79)						/* chn10		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_far5, 0, 0, 0)				/* m_rarmA1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_far4, 65, 0, 0)			/* m_rarmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_SURF, RCP_mario_far3 , 60, 0, 0)		/* m_rhand1		*/
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_SURF, RCP_swim_hand_r, 60, 0, 0)
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_SURF, RCP_mario_vsign_hand, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_far11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_far10, 89, 0, 0)				/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_far9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_SURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_SURF, RCP_mario_far8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_SURF, RCP_mario_far7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_SURF, RCP_mario_far6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x17000818
-const GeoLayout mario_geo_medium_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_butt), // starts sharing solid color with mario_torso (blue)
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_medium_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_geo_face_and_wings), // stops sharing because faces has its own dl - medium poly mario uses high poly face
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_left_arm), // starts sharing solid color with mario_left_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_medium_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_medium_poly_left_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_right_arm), // starts sharing solid color of his dl with mario_right_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_medium_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_medium_poly_right_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_left_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_medium_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_medium_poly_left_foot), // stops sharing because foot has its solid color (brown)
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_right_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_medium_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_medium_poly_right_foot), // stops sharing because foot has its solid color (brown)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
+/********************************************************************************/
+/*	Far mario hierarchy map data [ Translucent & Transparent ].					*/
+/********************************************************************************/
+const GeoLayout RCP_FarMarioHierarchy_XLU[] = {
+	hmsJoint(RM_XSURF, NULL, 0, 0, 0)										/* chn14		*/
+	hmsBegin()
+		hmsJoint(RM_XSURF, RCP_mario_far14, 0, 0, 0)						/* m_waist1_3	*/
+		hmsBegin()
+//  			hmsCProg(0, MarioProc1)
+			hmsJoint(RM_XSURF, RCP_mario_far_body, 68, 0, 0)					/* m_body1		*/
+			hmsBegin()
+
+				hmsJoint(RM_XSURF, NULL, 87, 0, 0)						/* m_head2		*/
+				hmsBegin()
+					hmsCProg(0, CtrlMarioHead)
+					hmsRotate(0, 0, 0)							/* for control by program	*/
+					hmsBegin()
+						hmsSelect(0, CtrlMarioEye)				/* for the eye animation	*/
+						hmsBegin()
+							hmsGfx(RM_XSURF, RCP_mario_far_head1)
+							hmsGfx(RM_XSURF, RCP_mario_far_head2)
+							hmsGfx(RM_XSURF, RCP_mario_far_head3)
+							hmsGfx(RM_XSURF, RCP_mario_far_head4)
+							hmsGfx(RM_XSURF, RCP_mario_far_head5)
+							hmsGfx(RM_XSURF, RCP_mario_far_head6)
+							hmsGfx(RM_XSURF, RCP_mario_far_head7)
+							hmsGfx(RM_XSURF, RCP_mario_far_head8)
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_XSURF, NULL, 67, -10, 79)							/* chn6			*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_far2, 0, 0, 0)				/* m_larmA1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_far1, 65, 0, 0)			/* m_larmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_XSURF, RCP_mario_far0 , 60, 0, 0)		/* m_lhamd1		*/
+								hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+								hmsJoint(RM_XSURF, RCP_swim_hand_l, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+				hmsJoint(RM_XSURF, NULL, 68, -10, -79)						/* chn10		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_far5, 0, 0, 0)				/* m_rarmA1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_far4, 65, 0, 0)			/* m_rarmB1		*/
+						hmsBegin()
+							hmsSelect(0, CtrlMarioHand)
+							hmsBegin()
+								hmsJoint(RM_XSURF, RCP_mario_far3 , 60, 0, 0)		/* m_rhand1		*/
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_XSURF, RCP_swim_hand_r, 60, 0, 0)
+								hmsBegin()
+									hmsSucker(0,0,0, 0,CtrlMarioTaking)
+								hmsEnd()
+								hmsJoint(RM_XSURF, RCP_mario_vsign_hand, 60, 0, 0)
+							hmsEnd()
+						hmsEnd()
+					hmsEnd()
+				hmsEnd()
+
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, 42)								/* chn15		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_far11, 0, 0, 0)					/* m_llegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_far10, 89, 0, 0)				/* m_llegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_far9, 67, 0, 0)			/* m_lfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+			hmsJoint(RM_XSURF, NULL, 13, -8, -42)								/* chn17		*/
+			hmsBegin()
+				hmsJoint(RM_XSURF, RCP_mario_far8, 0, 0, 0)					/* m_rlegA1		*/
+				hmsBegin()
+					hmsJoint(RM_XSURF, RCP_mario_far7, 89, 0, 0)				/* m_rlegB1		*/
+					hmsBegin()
+						hmsJoint(RM_XSURF, RCP_mario_far6, 67, 0, 0)			/* m_rfoot1		*/
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+
+		hmsEnd()
+	hmsEnd()
+	hmsReturn()
 };
 
-// 0x170009D4
-const GeoLayout mario_geo_low_poly_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_on_eyes_dead),
-            GEO_CLOSE_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_cap_off_eyes_dead),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_cap_wings), // left
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_cap_wings), // right
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
+const GeoLayout RCP_MarioHierarchy[] = {
+ 	hmsShadow(100, 180, 99)
+	hmsBegin()
+		hmsScale(0.25f)
+		hmsBegin()
+			hmsCProg(0, CtrlMarioAlpha)
+			hmsSelect(0, CtrlMarioLOD)
+			hmsBegin()
 
-// 0x17000B10
-const GeoLayout mario_geo_low_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
+				hmsSelect(0, CtrlMarioRenderMode)
+				hmsBegin()
+					hmsCall(RCP_NearMarioHierarchy)
+					hmsCall(RCP_NearMarioHierarchy_XLU)
+					hmsCall(RCP_NearMarioHierarchy)
+					hmsCall(RCP_NearMarioHierarchy_XLU)
+				hmsEnd()
 
-// 0x17000B88
-const GeoLayout mario_geo_low_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
+				hmsGroup()
+				hmsBegin()
+					hmsLOD(-2048,600)
+					hmsBegin()
+						hmsSelect(0, CtrlMarioRenderMode)
+						hmsBegin()
+							hmsCall(RCP_NearMarioHierarchy)
+							hmsCall(RCP_NearMarioHierarchy_XLU)
+							hmsCall(RCP_NearMarioHierarchy)
+							hmsCall(RCP_NearMarioHierarchy_XLU)
+						hmsEnd()					
+					hmsEnd()
 
-// 0x17000C30
-const GeoLayout mario_geo_low_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_butt), // starts sharing solid color with mario_torso (blue)
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_low_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_geo_low_poly_face_and_wings), // stops sharing because faces has its own dl
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_left_arm), // starts sharing solid color with mario_left_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_low_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_low_poly_left_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_right_arm), // starts sharing solid color of his dl with mario_right_forearm (red)
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_low_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_geo_low_poly_right_hand), // stops sharing because hand has its solid color (white)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_left_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_low_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_low_poly_left_foot), // stops sharing because foot has its solid color (brown)
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_right_thigh), // starts sharing solid color of his dl with mario_left_leg (blue)
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_low_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_right_foot), // stops sharing because foot has its solid color (brown)
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
+					hmsLOD(600,1600)
+					hmsBegin()
+						hmsSelect(0, CtrlMarioRenderMode)
+						hmsBegin()
+							hmsCall(RCP_MidMarioHierarchy)
+							hmsCall(RCP_MidMarioHierarchy_XLU)
+							hmsCall(RCP_MidMarioHierarchy)
+							hmsCall(RCP_MidMarioHierarchy_XLU)
+						hmsEnd()					
+					hmsEnd()
 
-// Vanish Mario Geo
-
-// 0x17000DEC
-const GeoLayout mario_vanish_geo_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_on_eyes_dead),
-            GEO_CLOSE_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_right), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_left), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_up), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_down), // unused
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_off_eyes_dead),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17000F28
-const GeoLayout mario_vanish_geo_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17000FA0
-const GeoLayout mario_vanish_geo_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Same rule body as Normal Mario
-
-// 0x17001048
-const GeoLayout mario_vanish_geo_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_vanish_geo_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_left_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_right_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_left_foot),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_right_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001204
-const GeoLayout mario_vanish_geo_medium_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_medium_poly_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x1700127C
-const GeoLayout mario_vanish_geo_medium_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_medium_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001324
-const GeoLayout mario_vanish_geo_medium_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_medium_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_vanish_geo_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_left_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_medium_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_medium_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_right_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_medium_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_medium_poly_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_medium_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_medium_poly_left_foot),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_right_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_medium_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_medium_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x170014E0
-const GeoLayout mario_vanish_geo_low_poly_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_right),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_left),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_up),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_down),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_on_eyes_dead),
-            GEO_CLOSE_NODE(),
-            GEO_SWITCH_CASE(0, geo_switch_mario_eyes),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_front),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_half_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_closed),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_right),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_left),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_up),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_down),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_cap_off_eyes_dead),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x1700161C
-const GeoLayout mario_vanish_geo_low_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_left_hand_closed),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001694
-const GeoLayout mario_vanish_geo_low_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_cap),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_right_hand_cap_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x1700173C
-const GeoLayout mario_vanish_geo_low_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_low_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_vanish_geo_low_poly_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_left_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_low_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_low_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_right_arm),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_low_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_vanish_geo_low_poly_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_low_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_low_poly_left_foot),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_right_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_low_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Metal Mario Geo
-
-// 0x170018F8
-const GeoLayout mario_metal_geo_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_cap_on_shared_dl),
-            GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_cap_off_shared_dl),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_cap_wings), // left
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_cap_wings), // right
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x170019A4
-const GeoLayout mario_metal_geo_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001A1C
-const GeoLayout mario_metal_geo_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// A difference from Normal Mario is that the dls after the butt and left thigh shares the metal texture of it, same rule applies to the medium and low poly geos
-
-// 0x17001AC4
-const GeoLayout mario_metal_geo_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_butt), // starts sharing metal texture with the dls below
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_metal_torso_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_geo_face_and_wings), // unlike normal mario geo, these dls still share the metal texture
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_right_hand), // stop sharing because the wing metal cap of it
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_left_thigh), // starts sharing metal texture with the dls below
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001C80
-const GeoLayout mario_metal_geo_medium_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_medium_poly_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001CF8
-const GeoLayout mario_metal_geo_medium_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_medium_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001DA0
-const GeoLayout mario_metal_geo_medium_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_medium_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_metal_medium_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_geo_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_medium_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_medium_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_medium_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_medium_poly_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_medium_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_medium_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_medium_poly_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_medium_poly_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_medium_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_medium_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17001F5C
-const GeoLayout mario_metal_geo_low_poly_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_low_poly_cap_on),
-            GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_low_poly_cap_off),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_cap_wings),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_cap_wings),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002008
-const GeoLayout mario_metal_geo_low_poly_left_hand[] = {
-    GEO_SWITCH_CASE(1, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_low_poly_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002080
-const GeoLayout mario_metal_geo_low_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_low_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002128
-const GeoLayout mario_metal_geo_low_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_low_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 68, 0, 0, mario_metal_low_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_geo_low_poly_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_low_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_low_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_OPAQUE, 65, 0, 0, mario_low_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_geo_low_poly_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_metal_low_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_low_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, mario_low_poly_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_OPAQUE, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_OPAQUE, 0, 0, 0, mario_low_poly_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_OPAQUE, 89, 0, 0, mario_low_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_OPAQUE, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_OPAQUE, mario_metal_low_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Metal Vanish Mario Geo
-
-// 0x170022E4
-const GeoLayout mario_metal_vanish_geo_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_on_shared_dl),
-            GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_off_shared_dl),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002390
-const GeoLayout mario_metal_vanish_geo_left_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002408
-const GeoLayout mario_metal_vanish_geo_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Same rules as Metal Mario
-
-// 0x170024B0
-const GeoLayout mario_metal_vanish_geo_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_metal_torso_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_vanish_geo_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_vanish_geo_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_vanish_geo_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x1700266C
-const GeoLayout mario_metal_vanish_geo_medium_poly_left_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_medium_poly_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_medium_poly_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x170026E4
-const GeoLayout mario_metal_vanish_geo_medium_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_medium_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x1700278C
-const GeoLayout mario_metal_vanish_geo_medium_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_medium_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_metal_medium_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_vanish_geo_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_medium_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_vanish_geo_medium_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_medium_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-                                GEO_OPEN_NODE(),
-                                    GEO_BRANCH(1, mario_metal_vanish_geo_medium_poly_right_hand),
-                                GEO_CLOSE_NODE(),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_medium_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_medium_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_medium_poly_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_medium_poly_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_medium_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_medium_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002958
-const GeoLayout mario_metal_vanish_geo_low_poly_face_and_wings[] = {
-    GEO_ASM(0, geo_mario_head_rotation),
-    GEO_ROTATION_NODE(0x00, 0, 0, 0),
-    GEO_OPEN_NODE(),
-        GEO_SWITCH_CASE(0, geo_switch_mario_cap_on_off),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_low_poly_cap_on),
-            GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_low_poly_cap_off),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, -126, 22, -40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_TRANSLATE_ROTATE(0, 142, -51, 126, -22, 40, -135),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_rotate_wing_cap_wings),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_cap_wings_transparent),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002A04
-const GeoLayout mario_metal_vanish_geo_low_poly_left_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(1, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_low_poly_left_hand_closed_shared_dl),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_left_hand_open_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_low_poly_left_hand_closed_shared_dl),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002A7C
-const GeoLayout mario_metal_vanish_geo_low_poly_right_hand[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_hand),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, NULL),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mario_hand_foot_scaler),
-            GEO_SCALE(0x00, 65536),
-            GEO_OPEN_NODE(),
-                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_low_poly_right_hand_closed),
-            GEO_CLOSE_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_open),
-        GEO_OPEN_NODE(),
-            GEO_HELD_OBJECT(0x00, 0, 0, 0, geo_switch_mario_hand_grab_pos),
-        GEO_CLOSE_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_right_hand_peace_shared_dl), // here we go hand
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 60, 0, 0, mario_metal_right_hand_cap_shared_dl),
-        GEO_OPEN_NODE(),
-            GEO_DISPLAY_LIST(LAYER_ALPHA, mario_metal_right_hand_cap_shared_dl_wings),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002B24
-const GeoLayout mario_metal_vanish_geo_low_poly_body[] = {
-    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, NULL),
-    GEO_OPEN_NODE(),
-        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_low_poly_butt),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_move_mario_part_from_parent),
-            GEO_ASM(0, geo_mario_tilt_torso),
-            GEO_ROTATION_NODE(0x00, 0, 0, 0),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, 0, 0, mario_metal_low_poly_torso),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 87, 0, 0, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_BRANCH(1, mario_metal_vanish_geo_low_poly_face_and_wings),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, -10, 79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_left_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_low_poly_left_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_vanish_geo_low_poly_left_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 68, -10, -79, NULL),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_right_arm_shared_dl),
-                        GEO_OPEN_NODE(),
-                            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 65, 0, 0, mario_low_poly_right_forearm_shared_dl),
-                            GEO_OPEN_NODE(),
-                                GEO_BRANCH(1, mario_metal_vanish_geo_low_poly_right_hand),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, 42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_metal_low_poly_left_thigh),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_low_poly_left_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, mario_low_poly_left_foot_shared_dl),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-            GEO_ANIMATED_PART(LAYER_TRANSPARENT, 13, -8, -42, NULL),
-            GEO_OPEN_NODE(),
-                GEO_ANIMATED_PART(LAYER_TRANSPARENT, 0, 0, 0, mario_low_poly_right_thigh_shared_dl),
-                GEO_OPEN_NODE(),
-                    GEO_ANIMATED_PART(LAYER_TRANSPARENT, 89, 0, 0, mario_low_poly_right_leg_shared_dl),
-                    GEO_OPEN_NODE(),
-                        GEO_ANIMATED_PART(LAYER_TRANSPARENT, 67, 0, 0, NULL),
-                        GEO_OPEN_NODE(),
-                            GEO_ASM(2, geo_mario_hand_foot_scaler),
-                            GEO_SCALE(0x00, 65536),
-                            GEO_OPEN_NODE(),
-                                GEO_DISPLAY_LIST(LAYER_TRANSPARENT, mario_metal_low_poly_right_foot),
-                            GEO_CLOSE_NODE(),
-                        GEO_CLOSE_NODE(),
-                    GEO_CLOSE_NODE(),
-                GEO_CLOSE_NODE(),
-            GEO_CLOSE_NODE(),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// High Poly
-
-// 0x17002CE0
-const GeoLayout mario_geo_load_body[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_cap_effect),
-    GEO_OPEN_NODE(),
-        GEO_BRANCH(1, mario_geo_body),
-        GEO_BRANCH(1, mario_vanish_geo_body),
-        GEO_BRANCH(1, mario_metal_geo_body),
-        GEO_BRANCH(1, mario_metal_vanish_geo_body),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Medium Poly
-
-// 0x17002D14
-const GeoLayout mario_geo_load_medium_poly_body[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_cap_effect),
-    GEO_OPEN_NODE(),
-        GEO_BRANCH(1, mario_geo_medium_poly_body),
-        GEO_BRANCH(1, mario_vanish_geo_medium_poly_body),
-        GEO_BRANCH(1, mario_metal_geo_medium_poly_body),
-        GEO_BRANCH(1, mario_metal_vanish_geo_medium_poly_body),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// Low Poly
-
-// 0x17002D48
-const GeoLayout mario_geo_load_low_poly_body[] = {
-    GEO_SWITCH_CASE(0, geo_switch_mario_cap_effect),
-    GEO_OPEN_NODE(),
-        GEO_BRANCH(1, mario_geo_low_poly_body),
-        GEO_BRANCH(1, mario_vanish_geo_low_poly_body),
-        GEO_BRANCH(1, mario_metal_geo_low_poly_body),
-        GEO_BRANCH(1, mario_metal_vanish_geo_low_poly_body),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// 0x17002D7C
-const GeoLayout mario_geo_render_body[] = {
-    GEO_NODE_START(),
-    GEO_OPEN_NODE(),
-        GEO_RENDER_RANGE(-2048, 600),
-        GEO_OPEN_NODE(),
-            GEO_BRANCH(1, mario_geo_load_body),
-        GEO_CLOSE_NODE(),
-        GEO_RENDER_RANGE(600, 1600),
-        GEO_OPEN_NODE(),
-            GEO_BRANCH(1, mario_geo_load_medium_poly_body),
-        GEO_CLOSE_NODE(),
-        GEO_RENDER_RANGE(1600, 32767),
-        GEO_OPEN_NODE(),
-            GEO_BRANCH(1, mario_geo_load_low_poly_body),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_RETURN(),
-};
-
-// This last geo is used to load all of Mario Geo in the Level Scripts
-
-// 0x17002DD4
-const GeoLayout mario_geo[] = {
-    GEO_SHADOW(SHADOW_CIRCLE_PLAYER, 0xB4, 100),
-    GEO_OPEN_NODE(),
-        GEO_SCALE(0x00, 16384),
-        GEO_OPEN_NODE(),
-            GEO_ASM(0, geo_mirror_mario_backface_culling),
-            GEO_ASM(0, geo_mirror_mario_set_alpha),
-            GEO_SWITCH_CASE(0, geo_switch_mario_stand_run),
-            GEO_OPEN_NODE(),
-                GEO_BRANCH(1, mario_geo_load_body),
-                GEO_BRANCH(1, mario_geo_render_body),
-            GEO_CLOSE_NODE(),
-            GEO_ASM(1, geo_mirror_mario_backface_culling),
-        GEO_CLOSE_NODE(),
-    GEO_CLOSE_NODE(),
-    GEO_END(),
+					hmsLOD(1600,32767)
+					hmsBegin()
+						hmsSelect(0, CtrlMarioRenderMode)
+						hmsBegin()
+							hmsCall(RCP_FarMarioHierarchy)
+							hmsCall(RCP_FarMarioHierarchy_XLU)
+							hmsCall(RCP_FarMarioHierarchy)
+							hmsCall(RCP_FarMarioHierarchy_XLU)
+						hmsEnd()					
+					hmsEnd()
+				hmsEnd()
+			hmsEnd()
+		hmsEnd()
+	hmsEnd()
+	hmsExit()
 };
