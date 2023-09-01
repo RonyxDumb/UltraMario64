@@ -129,13 +129,14 @@ endif
 
 ifeq ($(NON_MATCHING),1)
   DEFINES += NON_MATCHING=1 AVOID_UB=1
-  COMPARE := 0
+  COMPARE := 1
 endif
 
 
 # COMPARE - whether to verify the SHA-1 hash of the ROM after building
 #   1 - verifies the SHA-1 hash of the selected version of the game
 #   0 - does not verify the hash
+# Non deve compilare una rom uguale
 COMPARE ?= 1
 $(eval $(call validate-option,COMPARE,0 1))
 
@@ -476,10 +477,10 @@ endef
 #==============================================================================#
 
 all: $(ROM)
-ifeq ($(COMPARE),1)
-	@$(PRINT) "$(GREEN)Checking if ROM matches.. $(NO_COL)\n"
-	@$(SHA1SUM) --quiet -c $(TARGET).sha1 && $(PRINT) "$(TARGET): $(GREEN)OK$(NO_COL)\n" || ($(PRINT) "$(YELLOW)Building the ROM file has succeeded, but does not match the original ROM.\nThis is expected, and not an error, if you are making modifications.\nTo silence this message, use 'make COMPARE=0.' $(NO_COL)\n" && false)
-endif
+#ifeq ($(COMPARE),1)
+#	@$(PRINT) "$(GREEN)Checking if ROM matches.. $(NO_COL)\n"
+#	@$(SHA1SUM) --quiet -c $(TARGET).sha1 && $(PRINT) "$(TARGET): $(GREEN)OK$(NO_COL)\n" || ($(PRINT) "$(YELLOW)Building the ROM file has succeeded, but does not match the original ROM.\nThis is expected, and not an error, if you are making modifications.\nTo silence this message, use 'make COMPARE=0.' $(NO_COL)\n" && false)
+#endif
 
 clean:
 	$(RM) -r $(BUILD_DIR_BASE)
