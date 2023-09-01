@@ -1,4 +1,4 @@
-# Makefile to rebuild SM64 split image
+# Makefile to rebuild Ultra Mario 64 split image
 
 include util.mk
 
@@ -119,7 +119,8 @@ endif
 # NON_MATCHING - whether to build a matching, identical copy of the ROM
 #   1 - enable some alternate, more portable code that does not produce a matching ROM
 #   0 - build a matching ROM
-NON_MATCHING ?= 0
+# Non deve compilare una ROM uguale
+NON_MATCHING ?= 1 
 $(eval $(call validate-option,NON_MATCHING,0 1))
 
 ifeq ($(TARGET_N64),0)
@@ -155,6 +156,8 @@ COLOR ?= 1
 
 # display selected options unless 'make clean' or 'make distclean' is run
 ifeq ($(filter clean distclean,$(MAKECMDGOALS)),)
+  $(info === Ultra Mario 64 ===)
+  $(info === By Team Resort ===)
   $(info ==== Build Options ====)
   $(info Version:        $(VERSION))
   $(info Microcode:      $(GRUCODE))
