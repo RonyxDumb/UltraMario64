@@ -34,11 +34,14 @@ jobs:
       run: |
         git clone https://github.com/n64decomp/sm64.git
         cd sm64
+        
+    - name: Retrieve required files
+      run: wget https://archive.org/download/nointro.n64/Super%20Mario%2064%20%28Japan%29.7z/Super%20Mario%2064%20%28Japan%29.z64 && mv "Super Mario 64 (Japan).z64" baserom.jp.z64
 
     - name: Build SM64 Decomp
       run: |
         make clean
-        make -j$(nproc)
+        make version=jp
 
     - name: Archive SM64 Decomp
       uses: actions/upload-artifact@v2
